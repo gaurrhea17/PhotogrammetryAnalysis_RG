@@ -10,7 +10,7 @@ import csv
 
 class PhotogrammetryFitter:
     def __init__(self, image_feature_locations, seed_feature_locations, focal_length, principle_point, skew,
-                 radial_distortion=(0., 0.), tangential_distortion=(0., 0.), quiet=False):
+                 radial_distortion, tangential_distortion, quiet=False):
         self.nimages = len(image_feature_locations)
         features = set().union(*[f.keys() for f in image_feature_locations.values()])
         self.nfeatures = len(features)
@@ -65,6 +65,7 @@ class PhotogrammetryFitter:
             if not self.quiet:
                 print(f"image {i} reprojection errors:    average:"
                       f"{np.mean(reprojection_errors)}   max: {max(reprojection_errors)}")
+
             self.camera_rotations[i, :] = rotation_vector.ravel()
             self.camera_translations[i, :] = translation_vector.ravel()
         return self.camera_rotations, self.camera_translations, reprojected_points
@@ -112,7 +113,7 @@ class PhotogrammetryFitter:
             return errors
         return np.minimum(errors, max_error)
 
-    def bundle_adjustment(self, camera_rotations, camera_translations, xtol=1e-6, method='trf', use_sparsity = True,
+    def bundle_adjustment(self, camera_rotations, camera_translations, xtol=1e-7, method='trf', use_sparsity = True,
                          max_error = None, fit_cam = True): ## setting fit_cam to True allows the camera parameters to vary in the fit
         
         ## concatenating camera positions, derections, feature locations and later intrinsics to make into big 1D array -- python's optimisation function requires 1D array of parameters
@@ -354,7 +355,7 @@ def camera_extrinsics(orientations, positions):
 
 def build_camera_matrix(focal_length, principle_point, skew):
     return np.array([
-        [focal_length[0], skew, principle_point[0]],
+        [focal_length[0], 0, principle_point[0]],
         [0, focal_length[1], principle_point[1]],
         [0, 0, 1]], dtype=float)
 
